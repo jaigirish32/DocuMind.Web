@@ -11,6 +11,9 @@ const getBaseURL = () => {
 
 const api = axios.create({
   baseURL: getBaseURL(),
+    headers: {
+        'ngrok-skip-browser-warning': 'true',
+    },
 })
 
 export const uploadDocument = async (file) => {
