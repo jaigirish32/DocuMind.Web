@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { askQuestion } from '../api'
+import DocumentHints from './DocumentHints'
 
 export default function Chat({ selectedDoc, documentId }) {
   const [messages, setMessages] = useState([])
@@ -63,6 +64,13 @@ export default function Chat({ selectedDoc, documentId }) {
           : 'Asking across all documents'
         }
       </div>
+
+        {/* Document hints */}
+        <DocumentHints
+        selectedDoc={selectedDoc}
+        documentId={documentId}
+        onSelectHint={(hint) => setQuestion(hint)}
+        />
 
       {/* Messages */}
       <div style={{

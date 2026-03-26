@@ -44,3 +44,11 @@ export const getEmailStatus = async () => {
   const response = await api.get('/api/email/status')
   return response.data
 }
+
+export const getDocumentHints = async (documentId, documentName) => {
+  const response = await api.post('/api/ask', {
+    question: `List 4 specific questions a user could ask about this document "${documentName}". Return only the questions as a numbered list, nothing else.`,
+    document_id: documentId,
+  })
+  return response.data
+}

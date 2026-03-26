@@ -12,6 +12,9 @@ export default function Sidebar({ selectedDoc, onSelect }) {
     try {
       const docs = await listDocuments()
       setDocuments(docs)
+      if (docs.length > 0 && !selectedDoc) {
+        onSelect(docs[0])
+      }
     } catch (e) {
       console.error(e)
     } finally {
