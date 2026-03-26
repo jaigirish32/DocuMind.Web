@@ -25,3 +25,22 @@ export const listDocuments = async () => {
   const response = await api.get('/api/documents')
   return response.data.documents
 }
+
+export const syncGmail = async (maxResults = 10) => {
+  const response = await api.post('/api/email/sync/gmail', {
+    max_results: maxResults,
+  })
+  return response.data
+}
+
+export const searchEmails = async (question) => {
+  const response = await api.post('/api/email/search', {
+    question,
+  })
+  return response.data
+}
+
+export const getEmailStatus = async () => {
+  const response = await api.get('/api/email/status')
+  return response.data
+}

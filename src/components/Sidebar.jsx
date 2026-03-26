@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
-import { listDocuments } from '../api'
+import { listDocuments, syncGmail, getEmailStatus } from '../api'
 
 export default function Sidebar({ selectedDoc, onSelect }) {
-  const [documents, setDocuments] = useState([])
-  const [loading, setLoading]     = useState(true)
+  const [documents, setDocuments]       = useState([])
+  const [loading, setLoading]           = useState(true)
+  const [syncing, setSyncing]           = useState(false)
+  const [emailCount, setEmailCount]     = useState(0)
+  const [syncMessage, setSyncMessage]   = useState('')
 
   const load = async () => {
     try {
@@ -16,7 +19,33 @@ export default function Sidebar({ selectedDoc, onSelect }) {
     }
   }
 
-  useEffect(() => { load() }, [])
+  const loadEmailStatus = async () => {
+    try {
+      const status = await getEmailStatus()
+      setEmailCount(status.indexed_emails || 0)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleSyncGmail = async () => {
+    setSyncing(true)
+    setSyncMessage('')
+    try {
+      const result = await syncGmail(20)
+      setSyncMessage(`✓ ${result.emails} emails synced`)
+      loadEmailStatus()
+    } catch (e) {
+      setSyncMessage('✕ Sync failed')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  useEffect(() => {
+    load()
+    loadEmailStatus()
+  }, [])
 
   return (
     <aside style={{
@@ -72,7 +101,7 @@ export default function Sidebar({ selectedDoc, onSelect }) {
       </div>
 
       {/* Document list */}
-      <div style={{ padding: '0 12px 16px', flex: 1, overflowY: 'auto' }}>
+      <div style={{ padding: '0 12px 16px' }}>
         <p style={{
           fontSize: '10px',
           color: 'var(--muted)',
@@ -118,8 +147,59 @@ export default function Sidebar({ selectedDoc, onSelect }) {
         ))}
       </div>
 
+      {/* Divider */}
+      <div style={{
+        borderTop: '1px solid var(--border)',
+        margin: '8px 12px',
+      }} />
+
+      {/* Email section */}
+      <div style={{ padding: '0 12px 16px' }}>
+        <p style={{
+          fontSize: '10px',
+          color: 'var(--muted)',
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          padding: '0 12px',
+          marginBottom: '8px',
+        }}>
+          Emails {emailCount > 0 && `(${emailCount} indexed)`}
+        </p>
+
+        {/* Sync Gmail button */}
+        <button
+          onClick={handleSyncGmail}
+          disabled={syncing}
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            background: 'transparent',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            color: syncing ? 'var(--muted)' : 'var(--text)',
+            fontSize: '13px',
+            textAlign: 'left',
+            transition: 'all 0.15s',
+            cursor: syncing ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {syncing ? '⟳ Syncing...' : '📧 Sync Gmail'}
+        </button>
+
+        {/* Sync result message */}
+        {syncMessage && (
+          <p style={{
+            fontSize: '12px',
+            color: syncMessage.startsWith('✓') ? '#4ade80' : '#f87171',
+            padding: '6px 12px 0',
+          }}>
+            {syncMessage}
+          </p>
+        )}
+      </div>
+
       {/* Refresh button */}
-      <div style={{ padding: '0 12px' }}>
+      <div style={{ padding: '0 12px', marginTop: 'auto' }}>
         <button
           onClick={load}
           style={{
@@ -136,6 +216,7 @@ export default function Sidebar({ selectedDoc, onSelect }) {
           ↻ Refresh
         </button>
       </div>
+
     </aside>
   )
 }
