@@ -21,7 +21,13 @@ export default function Chat({ selectedDoc, documentId }) {
     setLoading(true)
 
     try {
-      const data = await askQuestion(q, documentId)
+      // Build history from existing messages
+      const history = messages.map(m => ({
+        role:    m.role === 'user' ? 'user' : 'assistant',
+        content: m.text,
+      }))
+
+      const data = await askQuestion(q, documentId, history)
       setMessages(prev => [...prev, {
         role:  'assistant',
         text:  data.answer,

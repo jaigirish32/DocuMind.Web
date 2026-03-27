@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { uploadDocument } from '../api'
 
+const MAX_SIZE_MB = 5
+
 export default function Upload({ onUploaded }) {
   const [uploading, setUploading] = useState(false)
   const [result, setResult]       = useState(null)
@@ -10,6 +12,13 @@ export default function Upload({ onUploaded }) {
   const onDrop = useCallback(async (files) => {
     const file = files[0]
     if (!file) return
+
+    // Client-side size check
+    const sizeMb = file.size / (1024 * 1024)
+    if (sizeMb > MAX_SIZE_MB) {
+      setError(`File too large. Maximum size is ${MAX_SIZE_MB} MB. Your file is ${sizeMb.toFixed(1)} MB.`)
+      return
+    }
 
     setUploading(true)
     setError(null)
@@ -35,6 +44,12 @@ export default function Upload({ onUploaded }) {
 
   return (
     <div style={{ marginBottom: '32px' }}>
+
+      {/* Accuracy badge */}
+      <p style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '12px' }}>
+        Max file size: {MAX_SIZE_MB} MB
+        </p>
+
       <div
         {...getRootProps()}
         style={{
@@ -66,30 +81,23 @@ export default function Upload({ onUploaded }) {
           </div>
         ) : (
           <div>
-            <p style={{
-              fontSize: '32px',
-              marginBottom: '12px',
-            }}>
+            <p style={{ fontSize: '32px', marginBottom: '12px' }}>
               {isDragActive ? '📂' : '📄'}
             </p>
             <p style={{ color: 'var(--text)', fontSize: '14px', marginBottom: '4px' }}>
               {isDragActive ? 'Drop PDF here' : 'Drag & drop a PDF'}
             </p>
             <p style={{ color: 'var(--muted)', fontSize: '12px' }}>
-              or click to browse
+              or click to browse · max {MAX_SIZE_MB} MB
             </p>
           </div>
         )}
       </div>
 
-      {/* Spinner animation */}
       <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      {/* Result */}
       {result && (
         <div style={{
           marginTop: '12px',
@@ -104,7 +112,6 @@ export default function Upload({ onUploaded }) {
         </div>
       )}
 
-      {/* Error */}
       {error && (
         <div style={{
           marginTop: '12px',

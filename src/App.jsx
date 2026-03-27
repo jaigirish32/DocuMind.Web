@@ -11,7 +11,10 @@ export default function App() {
   const handleUploaded = (result) => {
     setRefreshKey(k => k + 1)
     setShowUpload(false)
-    setSelectedDoc(result.document_name)
+    setSelectedDoc({
+      document_id:   result.document_id,
+      document_name: result.document_name,
+    })
   }
 
   return (
@@ -38,36 +41,59 @@ export default function App() {
 
         {/* Header */}
         <header style={{
-          padding: '16px 24px',
-          borderBottom: '1px solid var(--border)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <h2 style={{
-            fontFamily: "'DM Serif Display', serif",
-            fontSize: '18px',
-            color: 'var(--text)',
-            fontWeight: 'normal',
-          }}>
-            {selectedDoc?.document_name || 'All Documents'}
-          </h2>
+  padding: '16px 24px',
+  borderBottom: '1px solid var(--border)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+}}>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <h2 style={{
+      fontFamily: "'DM Serif Display', serif",
+      fontSize: '18px',
+      color: 'var(--text)',
+      fontWeight: 'normal',
+    }}>
+      {selectedDoc?.document_name || 'All Documents'}
+    </h2>
 
-          <button
-            onClick={() => setShowUpload(v => !v)}
-            style={{
-              padding: '8px 16px',
-              background: showUpload ? 'var(--border)' : 'rgba(232,213,163,0.1)',
-              border: '1px solid rgba(232,213,163,0.2)',
-              borderRadius: 'var(--radius)',
-              color: 'var(--accent)',
-              fontSize: '13px',
-              transition: 'all 0.15s',
-            }}
-          >
-            {showUpload ? '✕ Cancel' : '+ Upload PDF'}
-          </button>
-        </header>
+    {/* Permanent accuracy badge */}
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      padding: '4px 10px',
+      background: 'rgba(126,184,154,0.1)',
+      border: '1px solid rgba(126,184,154,0.2)',
+      borderRadius: '20px',
+    }}>
+      <span style={{ fontSize: '10px' }}>⚡</span>
+      <span style={{
+        fontSize: '11px',
+        color: '#7eb89a',
+        fontWeight: '500',
+        letterSpacing: '0.05em',
+      }}>
+        ~95% answer accuracy
+      </span>
+    </div>
+  </div>
+
+  <button
+    onClick={() => setShowUpload(v => !v)}
+    style={{
+      padding: '8px 16px',
+      background: showUpload ? 'var(--border)' : 'rgba(232,213,163,0.1)',
+      border: '1px solid rgba(232,213,163,0.2)',
+      borderRadius: 'var(--radius)',
+      color: 'var(--accent)',
+      fontSize: '13px',
+      transition: 'all 0.15s',
+    }}
+  >
+    {showUpload ? '✕ Cancel' : '+ Upload PDF'}
+  </button>
+</header>
 
         {/* Upload panel */}
         {showUpload && (

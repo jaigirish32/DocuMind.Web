@@ -25,10 +25,11 @@ export const uploadDocument = async (file) => {
   return response.data
 }
 
-export const askQuestion = async (question, documentId) => {
+export const askQuestion = async (question, documentId, history = []) => {
   const response = await api.post('/api/ask', {
     question,
     document_id: documentId || null,
+    history,
   })
   return response.data
 }

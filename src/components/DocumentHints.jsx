@@ -2,16 +2,17 @@ import { useState, useEffect } from 'react'
 import { getDocumentHints } from '../api'
 
 export default function DocumentHints({ selectedDoc, documentId, onSelectHint }) {
-  const [hints, setHints]   = useState([])
+  const [hints, setHints]     = useState([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!documentId) {
+    // Only show hints for Tesla 10-K
+    if (selectedDoc !== 'tesla-10k-2023.pdf') {
       setHints([])
       return
     }
     loadHints()
-  }, [documentId])
+  }, [selectedDoc, documentId])
 
   const loadHints = async () => {
     setLoading(true)
@@ -19,13 +20,10 @@ export default function DocumentHints({ selectedDoc, documentId, onSelectHint })
     try {
       const data = await getDocumentHints(documentId, selectedDoc)
       const text = data.answer || ''
-
-      // Parse numbered list into array
       const lines = text
         .split('\n')
         .map(l => l.replace(/^\d+\.\s*/, '').trim())
         .filter(l => l.length > 10)
-
       setHints(lines.slice(0, 4))
     } catch (e) {
       console.error(e)
@@ -34,7 +32,7 @@ export default function DocumentHints({ selectedDoc, documentId, onSelectHint })
     }
   }
 
-  if (!documentId) return null
+  if (selectedDoc !== 'tesla-10k-2023.pdf') return null
 
   return (
     <div style={{
@@ -58,11 +56,7 @@ export default function DocumentHints({ selectedDoc, documentId, onSelectHint })
         </p>
       )}
 
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '8px',
-      }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
         {hints.map((hint, i) => (
           <button
             key={i}
