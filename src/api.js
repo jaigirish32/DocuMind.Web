@@ -1,18 +1,7 @@
 import axios from 'axios'
 
-const getBaseURL = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL
-  }
-  // Check if running on GitHub Pages
-  if (window.location.hostname === 'jaigirish32.github.io') {
-    return 'https://flabbier-interspinal-neely.ngrok-free.dev'
-  }
-  return 'http://localhost:8000'
-}
-
 const api = axios.create({
-  baseURL: 'https://flabbier-interspinal-neely.ngrok-free.dev',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
   headers: {
     'ngrok-skip-browser-warning': 'true',
   },
