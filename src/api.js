@@ -1,11 +1,13 @@
 import axios from 'axios'
 
 const getBaseURL = () => {
-  // Check for Vercel injected env variable first
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL
   }
-  // Default to localhost for local dev
+  // Check if running on GitHub Pages
+  if (window.location.hostname === 'jaigirish32.github.io') {
+    return 'https://flabbier-interspinal-neely.ngrok-free.dev'
+  }
   return 'http://localhost:8000'
 }
 
