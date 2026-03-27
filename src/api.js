@@ -12,10 +12,10 @@ const getBaseURL = () => {
 }
 
 const api = axios.create({
-  baseURL: getBaseURL(),
-    headers: {
-        'ngrok-skip-browser-warning': 'true',
-    },
+  baseURL: 'https://flabbier-interspinal-neely.ngrok-free.dev',
+  headers: {
+    'ngrok-skip-browser-warning': 'true',
+  },
 })
 
 export const uploadDocument = async (file) => {
