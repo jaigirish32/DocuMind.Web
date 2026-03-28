@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { askQuestion } from '../api'
 import DocumentHints from './DocumentHints'
 
-export default function Chat({ selectedDoc, documentId }) {
+export default function Chat({ selectedDoc, documentId, documentIds }) {
   const [messages, setMessages] = useState([])
   const [question, setQuestion] = useState('')
   const [loading, setLoading]   = useState(false)
@@ -27,7 +27,7 @@ export default function Chat({ selectedDoc, documentId }) {
         content: m.text,
       }))
 
-      const data = await askQuestion(q, documentId, history)
+      const data = await askQuestion(q, documentId, history, documentIds)
       setMessages(prev => [...prev, {
         role:  'assistant',
         text:  data.answer,
@@ -72,11 +72,11 @@ export default function Chat({ selectedDoc, documentId }) {
       </div>
 
         {/* Document hints */}
-        <DocumentHints
+        {/* <DocumentHints
         selectedDoc={selectedDoc}
         documentId={documentId}
         onSelectHint={(hint) => setQuestion(hint)}
-        />
+        /> */}
 
       {/* Messages */}
       <div style={{

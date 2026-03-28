@@ -7,19 +7,21 @@ const api = axios.create({
   },
 })
 
-export const uploadDocument = async (file) => {
+export const uploadDocument = async (file, category = 'Others') => {
   const formData = new FormData()
   formData.append('file', file)
+  formData.append('category', category)
   const response = await api.post('/api/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
   return response.data
 }
 
-export const askQuestion = async (question, documentId, history = []) => {
+export const askQuestion = async (question, documentId, history = [], documentIds = null) => {
   const response = await api.post('/api/ask', {
     question,
-    document_id: documentId || null,
+    document_id:  documentId || null,
+    document_ids: documentIds || null,
     history,
   })
   return response.data
