@@ -7,7 +7,7 @@ export default function App() {
   const [selectedDocs, setSelectedDocs] = useState(null)  // array or null
   const [showUpload, setShowUpload]     = useState(false)
   const [refreshKey, setRefreshKey]     = useState(0)
-  
+  const [categories, setCategories] = useState([])
 
   const handleUploaded = (result) => {
     setRefreshKey(k => k + 1)
