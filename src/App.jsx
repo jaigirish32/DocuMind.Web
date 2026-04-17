@@ -2,12 +2,39 @@ import { useState } from 'react'
 import Sidebar from './components/Sidebar'
 import Upload from './components/Upload'
 import Chat from './components/Chat'
+import Login from './pages/Login'
 
 export default function App() {
-  const [selectedDocs, setSelectedDocs] = useState(null)  // array or null
+  // Check localStorage for existing token on first load
+  const [username, setUsername] = useState(
+    localStorage.getItem('username') || null
+  )
+
+  const [selectedDocs, setSelectedDocs] = useState(null)
   const [showUpload, setShowUpload]     = useState(false)
   const [refreshKey, setRefreshKey]     = useState(0)
-  const [categories, setCategories] = useState([])
+  const [categories, setCategories]     = useState([])
+
+  // ── Auth handlers ──────────────────────────────────────────────────────────
+
+  const handleLogin = (uname) => {
+    setUsername(uname)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user_id')
+    localStorage.removeItem('username')
+    setUsername(null)
+    setSelectedDocs(null)
+  }
+
+  // ── Show login if not authenticated ───────────────────────────────────────
+  if (!username) {
+    return <Login onLogin={handleLogin} />
+  }
+
+  // ── Rest of handlers — unchanged ──────────────────────────────────────────
 
   const handleUploaded = (result) => {
     setRefreshKey(k => k + 1)
@@ -21,14 +48,12 @@ export default function App() {
 
   const handleSelectDocs = (docs) => {
     setSelectedDocs(docs)
-    // Extract unique categories from all docs for Upload component
     if (docs) {
       const cats = [...new Set(docs.map(d => d.category).filter(Boolean))]
       setCategories(prev => [...new Set([...prev, ...cats])])
     }
   }
 
-  // For chat — if single doc selected use its id, if multiple use null (search all selected)
   const chatDocumentId = selectedDocs?.length === 1
     ? selectedDocs[0].document_id
     : null
@@ -37,7 +62,6 @@ export default function App() {
     ? selectedDocs.map(d => d.document_id)
     : null
 
-  // Header title
   const headerTitle = !selectedDocs || selectedDocs.length === 0
     ? 'All Documents'
     : selectedDocs.length === 1
@@ -45,13 +69,8 @@ export default function App() {
       : `${selectedDocs.length} documents selected`
 
   return (
-    <div style={{
-      display: 'flex',
-      height: '100vh',
-      overflow: 'hidden',
-    }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
 
-      {/* Sidebar */}
       <Sidebar
         key={refreshKey}
         selectedDocs={selectedDocs}
@@ -59,47 +78,44 @@ export default function App() {
         onCategoriesLoaded={setCategories}
       />
 
-      {/* Main content */}
-        <main style={{
-        flex: 1,
-        display: 'flex',
+      <main style={{
+        flex:          1,
+        display:       'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
+        overflow:      'hidden',
       }}>
 
-        {/* Header */}
         <header style={{
-          padding: '16px 24px',
-          borderBottom: '1px solid var(--border)',
-          display: 'flex',
-          alignItems: 'center',
+          padding:        '16px 24px',
+          borderBottom:   '1px solid var(--border)',
+          display:        'flex',
+          alignItems:     'center',
           justifyContent: 'space-between',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <h2 style={{
               fontFamily: "'DM Serif Display', serif",
-              fontSize: '18px',
-              color: 'var(--text)',
+              fontSize:   '18px',
+              color:      'var(--text)',
               fontWeight: 'normal',
             }}>
               {headerTitle}
             </h2>
 
-            {/* Permanent accuracy badge */}
             <div style={{
-              display: 'flex',
+              display:    'flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '4px 10px',
+              gap:        '6px',
+              padding:    '4px 10px',
               background: 'rgba(126,184,154,0.1)',
-              border: '1px solid rgba(126,184,154,0.2)',
+              border:     '1px solid rgba(126,184,154,0.2)',
               borderRadius: '20px',
             }}>
               <span style={{ fontSize: '10px' }}>⚡</span>
               <span style={{
-                fontSize: '11px',
-                color: '#7eb89a',
-                fontWeight: '500',
+                fontSize:      '11px',
+                color:         '#7eb89a',
+                fontWeight:    '500',
                 letterSpacing: '0.05em',
               }}>
                 ~95% answer accuracy
@@ -107,42 +123,74 @@ export default function App() {
             </div>
           </div>
 
-          <button
-            onClick={() => setShowUpload(v => !v)}
-            style={{
-              padding: '8px 16px',
-              background: showUpload ? 'var(--border)' : 'rgba(232,213,163,0.1)',
-              border: '1px solid rgba(232,213,163,0.2)',
-              borderRadius: 'var(--radius)',
-              color: 'var(--accent)',
-              fontSize: '13px',
-              transition: 'all 0.15s',
-            }}
-          >
-            {showUpload ? '✕ Cancel' : '+ Upload PDF'}
-          </button>
+          {/* Right side — username + logout + upload */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+
+            {/* Username display */}
+            <span style={{
+              fontSize:  '12px',
+              color:     'var(--text-muted, #888)',
+            }}>
+              {username}
+            </span>
+
+            {/* Logout button */}
+            <button
+              onClick={handleLogout}
+              style={{
+                padding:      '6px 12px',
+                background:   'transparent',
+                border:       '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                color:        'var(--text-muted, #888)',
+                fontSize:     '12px',
+                cursor:       'pointer',
+              }}
+            >
+              Sign out
+            </button>
+
+            {/* Upload button */}
+            <button
+              onClick={() => setShowUpload(v => !v)}
+              style={{
+                padding:    '8px 16px',
+                background: showUpload
+                  ? 'var(--border)'
+                  : 'rgba(232,213,163,0.1)',
+                border:       '1px solid rgba(232,213,163,0.2)',
+                borderRadius: 'var(--radius)',
+                color:        'var(--accent)',
+                fontSize:     '13px',
+                transition:   'all 0.15s',
+                cursor:       'pointer',
+              }}
+            >
+              {showUpload ? '✕ Cancel' : '+ Upload PDF'}
+            </button>
+          </div>
         </header>
 
-        {/* Upload panel */}
         {showUpload && (
           <div style={{
-            padding: '24px',
+            padding:      '24px',
             borderBottom: '1px solid var(--border)',
-            background: 'var(--surface)',
-            maxHeight: '400px',
-            overflowY: 'auto',
-            position: 'relative',
+            background:   'var(--surface)',
+            maxHeight:    '400px',
+            overflowY:    'auto',
           }}>
-            <Upload
-              onUploaded={handleUploaded}
-            />
+            <Upload onUploaded={handleUploaded} />
           </div>
         )}
 
-        {/* Chat */}
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
           <Chat
-            selectedDoc={!selectedDocs ? null : selectedDocs.length === 1 ? selectedDocs[0].document_name : `${selectedDocs.length} documents selected`}
+            selectedDoc={
+              !selectedDocs ? null
+              : selectedDocs.length === 1
+                ? selectedDocs[0].document_name
+                : `${selectedDocs.length} documents selected`
+            }
             documentId={chatDocumentId}
             documentIds={chatDocumentIds}
           />

@@ -236,7 +236,7 @@ export default function Sidebar({ selectedDocs, onSelectDocs, onCategoriesLoaded
       <div style={{ borderTop: '1px solid var(--border)', margin: '8px 12px' }} />
 
       {/* Email section */}
-      <div style={{ padding: '0 12px 16px' }}>
+      <div style={{ padding: '0 12px 16px', display: 'none' }}>
         <p style={{
           fontSize: '10px',
           color: 'var(--muted)',

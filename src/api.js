@@ -7,6 +7,35 @@ const api = axios.create({
   },
 })
 
+// ── Request interceptor — adds token to every request ──────────────────────
+// This runs before EVERY api call automatically
+// No need to manually add token in each function
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+// ── Response interceptor — handles token expiry ────────────────────────────
+// If server returns 401 (unauthorized) → token expired or invalid
+// Clear storage and reload → user sees login page again
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user_id')
+      localStorage.removeItem('username')
+      window.location.reload()
+    }
+    return Promise.reject(error)
+  }
+)
+
+// ── API functions — unchanged, token added automatically ───────────────────
+
 export const uploadDocument = async (file, category = 'Others') => {
   const formData = new FormData()
   formData.append('file', file)
@@ -48,9 +77,7 @@ export const syncGmail = async (maxResults = 10) => {
 }
 
 export const searchEmails = async (question) => {
-  const response = await api.post('/api/email/search', {
-    question,
-  })
+  const response = await api.post('/api/email/search', { question })
   return response.data
 }
 
@@ -58,3 +85,17 @@ export const getEmailStatus = async () => {
   const response = await api.get('/api/email/status')
   return response.data
 }
+
+// ── Auth API functions ─────────────────────────────────────────────────────
+
+export const login = async (username, password) => {
+  const response = await api.post('/api/auth/login', { username, password })
+  return response.data   // { token, user_id, username }
+}
+
+export const register = async (username, email, password) => {
+  const response = await api.post('/api/auth/register', { username, email, password })
+  return response.data   // { token, user_id, username }
+}
+
+export default api
