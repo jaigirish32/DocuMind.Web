@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { uploadDocument, listDocuments } from '../api'
+import { getDisplayName } from "../utils/displayName";
 
 const MAX_SIZE_MB = 5
 
@@ -146,7 +147,7 @@ export default function Upload({ onUploaded }) {
           background: 'rgba(126,184,154,0.1)', border: '1px solid rgba(126,184,154,0.2)',
           borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--success)',
         }}>
-          ✓ {result.document_name} → {result.category} — {result.pages} pages
+          ✓ {getDisplayName(result.document_name)} → {result.category} — {result.pages} pages
         </div>
       )}
 

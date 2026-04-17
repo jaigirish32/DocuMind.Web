@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar'
 import Upload from './components/Upload'
 import Chat from './components/Chat'
 import Login from './pages/Login'
+import { getDisplayName } from "./utils/displayName";
 
 export default function App() {
   // Check localStorage for existing token on first load
@@ -65,7 +66,7 @@ export default function App() {
   const headerTitle = !selectedDocs || selectedDocs.length === 0
     ? 'All Documents'
     : selectedDocs.length === 1
-      ? selectedDocs[0].document_name
+      ? getDisplayName(selectedDocs[0].document_name)
       : `${selectedDocs.length} documents selected`
 
   return (
@@ -188,7 +189,7 @@ export default function App() {
             selectedDoc={
               !selectedDocs ? null
               : selectedDocs.length === 1
-                ? selectedDocs[0].document_name
+                ? getDisplayName(selectedDocs[0].document_name)
                 : `${selectedDocs.length} documents selected`
             }
             documentId={chatDocumentId}

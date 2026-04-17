@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { listDocuments, syncGmail, getEmailStatus } from '../api'
+import { getDisplayName } from "../utils/displayName";
 
 export default function Sidebar({ selectedDocs, onSelectDocs, onCategoriesLoaded }) {
   const [documents, setDocuments]   = useState([])
@@ -225,7 +226,7 @@ export default function Sidebar({ selectedDocs, onSelectDocs, onCategoriesLoaded
                 }}>
                   {isSelected(doc) ? '✓' : ''}
                 </span>
-                📄 {doc.document_name}
+                📄 {getDisplayName(doc.document_name)}
               </button>
             ))}
           </div>
