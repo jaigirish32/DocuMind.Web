@@ -1,16 +1,16 @@
 {
   "name": "documind-web",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
-  "homepage": "https://jaigirish32.github.io/DocuMind.Web",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "preview": "vite preview"
   },
   "dependencies": {
     "axios": "^1.13.6",
@@ -26,9 +26,7 @@
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
-    "gh-pages": "^6.3.0",
     "globals": "^17.4.0",
-    "serve": "^14.2.6",
-    "vite": "^8.0.1"
+    "vite": "^8.0.10"
   }
 }

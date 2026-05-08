@@ -8,8 +8,6 @@ const api = axios.create({
 })
 
 // ── Request interceptor — adds token to every request ──────────────────────
-// This runs before EVERY api call automatically
-// No need to manually add token in each function
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token')
   if (token) {
@@ -19,8 +17,6 @@ api.interceptors.request.use(config => {
 })
 
 // ── Response interceptor — handles token expiry ────────────────────────────
-// If server returns 401 (unauthorized) → token expired or invalid
-// Clear storage and reload → user sees login page again
 api.interceptors.response.use(
   response => response,
   error => {
@@ -28,13 +24,14 @@ api.interceptors.response.use(
       localStorage.removeItem('token')
       localStorage.removeItem('user_id')
       localStorage.removeItem('username')
-      window.location.reload()
+      localStorage.removeItem('company')
+      window.location.href = window.location.origin
     }
     return Promise.reject(error)
   }
 )
 
-// ── API functions — unchanged, token added automatically ───────────────────
+// ── Document API functions ─────────────────────────────────────────────────
 
 export const uploadDocument = async (file, category = 'Others') => {
   const formData = new FormData()
@@ -61,6 +58,13 @@ export const listDocuments = async () => {
   return response.data.documents
 }
 
+export const deleteDocument = async (documentId) => {
+  const response = await api.delete(
+    `/api/documents/${encodeURIComponent(documentId)}`
+  )
+  return response.data
+}
+
 export const getDocumentHints = async (documentId, documentName) => {
   const response = await api.post('/api/ask', {
     question: `List 4 specific questions a user could ask about this document "${documentName}". Return only the questions as a numbered list, nothing else.`,
@@ -68,6 +72,8 @@ export const getDocumentHints = async (documentId, documentName) => {
   })
   return response.data
 }
+
+// ── Email API functions ────────────────────────────────────────────────────
 
 export const syncGmail = async (maxResults = 10) => {
   const response = await api.post('/api/email/sync/gmail', {
@@ -90,12 +96,17 @@ export const getEmailStatus = async () => {
 
 export const login = async (username, password) => {
   const response = await api.post('/api/auth/login', { username, password })
-  return response.data   // { token, user_id, username }
+  return response.data   // { token, user_id, username, company }
 }
 
-export const register = async (username, email, password) => {
-  const response = await api.post('/api/auth/register', { username, email, password })
-  return response.data   // { token, user_id, username }
+export const register = async (username, email, password, company) => {
+  const response = await api.post('/api/auth/register', {
+    username,
+    email,
+    password,
+    company,
+  })
+  return response.data   // { token, user_id, username, company }
 }
 
 export default api

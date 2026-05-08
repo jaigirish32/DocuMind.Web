@@ -2,24 +2,47 @@ import { useState } from 'react'
 import { login, register } from '../api'
 
 export default function Login({ onLogin }) {
-  const [mode, setMode]         = useState('login')    // 'login' or 'register'
+  const [mode, setMode]         = useState('login')
   const [username, setUsername] = useState('')
   const [email, setEmail]       = useState('')
+  const [company, setCompany]   = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
 
+  // Pydantic v2 returns 422 errors as an array of {type, loc, msg, input} objects.
+  // FastAPI HTTPException returns 400/401 with detail as a string.
+  // This normalizes both into a displayable string.
+  const formatError = (detail) => {
+    if (!detail) return null
+    if (typeof detail === 'string') return detail
+    if (Array.isArray(detail)) {
+      return detail
+        .map(e => {
+          const field = Array.isArray(e.loc) ? e.loc[e.loc.length - 1] : 'field'
+          return `${field}: ${e.msg}`
+        })
+        .join(' · ')
+    }
+    return 'Request failed'
+  }
+
   const handleSubmit = async () => {
     setError('')
 
-    // Basic validation
     if (!username.trim() || !password.trim()) {
       setError('Username and password are required')
       return
     }
-    if (mode === 'register' && !email.trim()) {
-      setError('Email is required')
-      return
+    if (mode === 'register') {
+      if (!email.trim()) {
+        setError('Email is required')
+        return
+      }
+      if (!company.trim()) {
+        setError('Company is required')
+        return
+      }
     }
     if (password.length < 6) {
       setError('Password must be at least 6 characters')
@@ -30,20 +53,19 @@ export default function Login({ onLogin }) {
     try {
       const data = mode === 'login'
         ? await login(username.trim(), password)
-        : await register(username.trim(), email.trim(), password)
+        : await register(username.trim(), email.trim(), password, company.trim())
 
-      // Store credentials in localStorage
       localStorage.setItem('token',    data.token)
       localStorage.setItem('user_id',  String(data.user_id))
       localStorage.setItem('username', data.username)
+      localStorage.setItem('company',  data.company || '—')
 
-      // Tell App.jsx we are logged in
       onLogin(data.username)
 
     } catch (err) {
-      const msg = err.response?.data?.detail
-      if (msg) {
-        setError(msg)
+      const formatted = formatError(err.response?.data?.detail)
+      if (formatted) {
+        setError(formatted)
       } else {
         setError(mode === 'login'
           ? 'Invalid username or password'
@@ -133,6 +155,7 @@ export default function Login({ onLogin }) {
         {/* Fields */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
+          {/* Username — both modes */}
           <input
             placeholder="Username"
             value={username}
@@ -141,6 +164,7 @@ export default function Login({ onLogin }) {
             style={inputStyle}
           />
 
+          {/* Email — register only */}
           {mode === 'register' && (
             <input
               type="email"
@@ -152,6 +176,19 @@ export default function Login({ onLogin }) {
             />
           )}
 
+          {/* Company — register only */}
+          {mode === 'register' && (
+            <input
+              placeholder="Company"
+              value={company}
+              onChange={e => setCompany(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+              style={inputStyle}
+              maxLength={100}
+            />
+          )}
+
+          {/* Password — both modes */}
           <input
             type="password"
             placeholder="Password"
@@ -161,7 +198,7 @@ export default function Login({ onLogin }) {
             style={inputStyle}
           />
 
-          {/* Error message */}
+          {/* Error — guaranteed string */}
           {error && (
             <p style={{
               color:     '#e87a7a',
@@ -172,11 +209,11 @@ export default function Login({ onLogin }) {
               borderRadius: '6px',
               border:    '1px solid rgba(232,122,122,0.2)',
             }}>
-              {error}
+              {String(error)}
             </p>
           )}
 
-          {/* Submit button */}
+          {/* Submit */}
           <button
             onClick={handleSubmit}
             disabled={loading}

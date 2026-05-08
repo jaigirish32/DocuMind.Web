@@ -10,6 +10,9 @@ export default function App() {
   const [username, setUsername] = useState(
     localStorage.getItem('username') || null
   )
+  const [company, setCompany] = useState(
+    localStorage.getItem('company') || '—'
+  )
 
   const [selectedDocs, setSelectedDocs] = useState(null)
   const [showUpload, setShowUpload]     = useState(false)
@@ -20,13 +23,16 @@ export default function App() {
 
   const handleLogin = (uname) => {
     setUsername(uname)
+    setCompany(localStorage.getItem('company') || '—')
   }
 
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user_id')
     localStorage.removeItem('username')
+    localStorage.removeItem('company')
     setUsername(null)
+    setCompany('—')
     setSelectedDocs(null)
   }
 
@@ -77,6 +83,8 @@ export default function App() {
         selectedDocs={selectedDocs}
         onSelectDocs={handleSelectDocs}
         onCategoriesLoaded={setCategories}
+        showUpload={showUpload}
+        onToggleUpload={() => setShowUpload(v => !v)}
       />
 
       <main style={{
@@ -124,13 +132,32 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right side — username + logout + upload */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Right side — company (prominent) + user info + logout */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
 
-            {/* Username display */}
+            {/* Company — same visual weight as the document title */}
             <span style={{
-              fontSize:  '12px',
-              color:     'var(--text-muted, #888)',
+              fontFamily:    "'DM Serif Display', serif",
+              fontSize:      '20px',
+              color:         'var(--accent)',
+              letterSpacing: '0.02em',
+              whiteSpace:    'nowrap',
+              fontWeight:    'normal',
+            }}>
+              {company}
+            </span>
+
+            {/* Vertical divider */}
+            <span style={{
+              width:      '1px',
+              height:     '20px',
+              background: 'var(--border)',
+            }} />
+
+            {/* Username */}
+            <span style={{
+              fontSize: '13px',
+              color:    'var(--muted, #888)',
             }}>
               {username}
             </span>
@@ -143,31 +170,12 @@ export default function App() {
                 background:   'transparent',
                 border:       '1px solid var(--border)',
                 borderRadius: 'var(--radius)',
-                color:        'var(--text-muted, #888)',
+                color:        'var(--muted, #888)',
                 fontSize:     '12px',
                 cursor:       'pointer',
               }}
             >
               Sign out
-            </button>
-
-            {/* Upload button */}
-            <button
-              onClick={() => setShowUpload(v => !v)}
-              style={{
-                padding:    '8px 16px',
-                background: showUpload
-                  ? 'var(--border)'
-                  : 'rgba(232,213,163,0.1)',
-                border:       '1px solid rgba(232,213,163,0.2)',
-                borderRadius: 'var(--radius)',
-                color:        'var(--accent)',
-                fontSize:     '13px',
-                transition:   'all 0.15s',
-                cursor:       'pointer',
-              }}
-            >
-              {showUpload ? '✕ Cancel' : '+ Upload PDF'}
             </button>
           </div>
         </header>

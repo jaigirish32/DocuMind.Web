@@ -6,6 +6,7 @@
   padding: 0;
 }
 
+/* ── Default theme = dark ─────────────────────────────────────────────── */
 :root {
   --bg:        #0f0f0f;
   --surface:   #1a1a1a;
@@ -17,6 +18,32 @@
   --success:   #7eb89a;
   --error:     #c47a7a;
   --radius:    8px;
+
+  /* Theme-aware tints — components can use these instead of hardcoded rgba */
+  --tint-accent-soft:   rgba(232, 213, 163, 0.08);
+  --tint-accent:        rgba(232, 213, 163, 0.15);
+  --tint-accent-strong: rgba(232, 213, 163, 0.25);
+  --tint-success:       rgba(126, 184, 154, 0.10);
+  --tint-error:         rgba(196, 122, 122, 0.10);
+}
+
+/* ── Light theme ──────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg:        #faf7f0;   /* warm cream — not stark white */
+  --surface:   #ffffff;   /* pure white cards for subtle elevation */
+  --border:    #e5dfd0;   /* warm light border */
+  --accent:    #a07f3a;   /* bronze gold — readable on white, keeps brand warmth */
+  --accent2:   #7d622a;   /* darker bronze for hover/secondary */
+  --text:      #1f1c17;   /* near-black with warm undertone */
+  --muted:     #8a847a;   /* warm grey */
+  --success:   #3d7a52;   /* forest green — contrasts on white */
+  --error:     #a83838;   /* brick red */
+
+  --tint-accent-soft:   rgba(160, 127, 58, 0.06);
+  --tint-accent:        rgba(160, 127, 58, 0.12);
+  --tint-accent-strong: rgba(160, 127, 58, 0.22);
+  --tint-success:       rgba(61, 122, 82, 0.10);
+  --tint-error:         rgba(168, 56, 56, 0.10);
 }
 
 body {
@@ -26,6 +53,8 @@ body {
   font-weight: 300;
   line-height: 1.6;
   min-height: 100vh;
+  /* Smooth theme transitions */
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #root {

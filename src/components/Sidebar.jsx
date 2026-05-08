@@ -1,14 +1,24 @@
 import { useState, useEffect } from 'react'
-import { listDocuments, syncGmail, getEmailStatus } from '../api'
+import { listDocuments, syncGmail, getEmailStatus, deleteDocument } from '../api'
 import { getDisplayName } from "../utils/displayName";
+import { useTheme } from '../hooks/useTheme'
 
-export default function Sidebar({ selectedDocs, onSelectDocs, onCategoriesLoaded }) {
+export default function Sidebar({
+  selectedDocs,
+  onSelectDocs,
+  onCategoriesLoaded,
+  showUpload,
+  onToggleUpload,
+}) {
   const [documents, setDocuments]   = useState([])
   const [loading, setLoading]       = useState(true)
   const [syncing, setSyncing]       = useState(false)
   const [emailCount, setEmailCount] = useState(0)
   const [syncMessage, setSyncMessage] = useState('')
   const [collapsed, setCollapsed]   = useState({})
+  const [hoveredDocId, setHoveredDocId] = useState(null)
+  const [deletingIds, setDeletingIds]   = useState(new Set())
+  const { theme, toggle: toggleTheme } = useTheme()
 
   const load = async () => {
     try {
@@ -21,7 +31,6 @@ export default function Sidebar({ selectedDocs, onSelectDocs, onCategoriesLoaded
         const cats = [...new Set(docs.map(d => d.category || 'Others'))]
         onCategoriesLoaded(cats)
       }
-
     } catch (e) {
       console.error(e)
     } finally {
@@ -57,7 +66,6 @@ export default function Sidebar({ selectedDocs, onSelectDocs, onCategoriesLoaded
     loadEmailStatus()
   }, [])
 
-  // Group documents by category
   const grouped = documents.reduce((acc, doc) => {
     const cat = doc.category || 'Others'
     if (!acc[cat]) acc[cat] = []
@@ -83,6 +91,74 @@ export default function Sidebar({ selectedDocs, onSelectDocs, onCategoriesLoaded
   const isSelected = (doc) =>
     (selectedDocs || []).some(d => d.document_id === doc.document_id)
 
+  const handleDelete = async (doc) => {
+    const docCategory     = doc.category || 'Others'
+    const docsInCategory  = grouped[docCategory] || []
+    const isLastInCat     = docsInCategory.length === 1
+    const docName         = getDisplayName(doc.document_name)
+
+    // Smart confirm — extra warning when this is the last file in a category
+    const message = isLastInCat
+      ? `This is the last file in "${docCategory}".\n\nDelete "${docName}" and remove the category?`
+      : `Delete "${docName}"?\n\nThis cannot be undone.`
+
+    if (!window.confirm(message)) return
+
+    setDeletingIds(prev => {
+      const next = new Set(prev)
+      next.add(doc.document_id)
+      return next
+    })
+
+    try {
+      await deleteDocument(doc.document_id)
+
+      // Optimistic local update — remove from documents list
+      const remainingDocs = documents.filter(d => d.document_id !== doc.document_id)
+      setDocuments(remainingDocs)
+
+      // Notify parent if the deleted doc was currently selected
+      const wasSelected = (selectedDocs || []).some(
+        d => d.document_id === doc.document_id
+      )
+      if (wasSelected) {
+        const remainingSelected = (selectedDocs || []).filter(
+          d => d.document_id !== doc.document_id
+        )
+        onSelectDocs(remainingSelected.length > 0 ? remainingSelected : null)
+      }
+
+      // Refresh parent's category list if it cares
+      if (onCategoriesLoaded) {
+        const cats = [...new Set(remainingDocs.map(d => d.category || 'Others'))]
+        onCategoriesLoaded(cats)
+      }
+    } catch (e) {
+      console.error('Delete failed', e)
+      alert(
+        'Failed to delete: ' +
+        (e.response?.data?.detail || e.message || 'unknown error')
+      )
+    } finally {
+      setDeletingIds(prev => {
+        const next = new Set(prev)
+        next.delete(doc.document_id)
+        return next
+      })
+    }
+  }
+
+  const sidebarButtonStyle = {
+    width: '100%',
+    padding: '10px 12px',
+    background: 'transparent',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
+    color: 'var(--muted)',
+    fontSize: '12px',
+    transition: 'all 0.15s',
+  }
+
   return (
     <aside style={{
       width: '260px',
@@ -96,7 +172,7 @@ export default function Sidebar({ selectedDocs, onSelectDocs, onCategoriesLoaded
     }}>
 
       {/* Logo */}
-      <div style={{ padding: '0 24px 32px' }}>
+      <div style={{ padding: '0 24px 20px' }}>
         <h1 style={{
           fontFamily: "'DM Serif Display', serif",
           fontSize: '22px',
@@ -112,9 +188,41 @@ export default function Sidebar({ selectedDocs, onSelectDocs, onCategoriesLoaded
           textTransform: 'uppercase',
           marginTop: '2px',
         }}>
-          Document Intelligence
+          SNAPBYTE TECHNOLOGIES
         </p>
       </div>
+
+      {/* Upload button — under the logo */}
+      {onToggleUpload && (
+        <div style={{ padding: '0 12px 16px' }}>
+          <button
+            onClick={onToggleUpload}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              background: showUpload
+                ? 'var(--border)'
+                : 'var(--tint-accent-soft)',
+              border: '1px solid var(--tint-accent-strong)',
+              borderRadius: 'var(--radius)',
+              color: 'var(--accent)',
+              fontSize: '13px',
+              fontWeight: '500',
+              textAlign: 'left',
+              transition: 'all 0.15s',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <span style={{ fontSize: '14px' }}>
+              {showUpload ? '✕' : '+'}
+            </span>
+            {showUpload ? 'Cancel upload' : 'Upload PDF'}
+          </button>
+        </div>
+      )}
 
       {/* All documents */}
       <div style={{ padding: '0 12px', marginBottom: '8px' }}>
@@ -123,8 +231,8 @@ export default function Sidebar({ selectedDocs, onSelectDocs, onCategoriesLoaded
           style={{
             width: '100%',
             padding: '10px 12px',
-            background: !selectedDocs ? 'rgba(232,213,163,0.1)' : 'transparent',
-            border: !selectedDocs ? '1px solid rgba(232,213,163,0.2)' : '1px solid transparent',
+            background: !selectedDocs ? 'var(--tint-accent)' : 'transparent',
+            border: !selectedDocs ? '1px solid var(--tint-accent-strong)' : '1px solid transparent',
             borderRadius: 'var(--radius)',
             color: !selectedDocs ? 'var(--accent)' : 'var(--muted)',
             fontSize: '13px',
@@ -157,7 +265,6 @@ export default function Sidebar({ selectedDocs, onSelectDocs, onCategoriesLoaded
 
         {Object.entries(grouped).map(([cat, docs]) => (
           <div key={cat} style={{ marginBottom: '8px' }}>
-            {/* Category header */}
             <button
               onClick={() => toggleCategory(cat)}
               style={{
@@ -186,49 +293,115 @@ export default function Sidebar({ selectedDocs, onSelectDocs, onCategoriesLoaded
               </span>
             </button>
 
-            {/* Documents in category */}
-            {!collapsed[cat] && docs.map(doc => (
-              <button
-                key={doc.document_id}
-                onClick={() => toggleDoc(doc)}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px 8px 24px',
-                  background: isSelected(doc) ? 'rgba(232,213,163,0.1)' : 'transparent',
-                  border: isSelected(doc) ? '1px solid rgba(232,213,163,0.2)' : '1px solid transparent',
-                  borderRadius: 'var(--radius)',
-                  color: isSelected(doc) ? 'var(--accent)' : 'var(--text)',
-                  fontSize: '13px',
-                  textAlign: 'left',
-                  marginBottom: '2px',
-                  transition: 'all 0.15s',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                }}
-              >
-                <span style={{
-                  width: '14px',
-                  height: '14px',
-                  borderRadius: '3px',
-                  border: `1px solid ${isSelected(doc) ? 'var(--accent)' : 'var(--border)'}`,
-                  background: isSelected(doc) ? 'var(--accent)' : 'transparent',
-                  flexShrink: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '9px',
-                  color: '#1a1a1a',
-                }}>
-                  {isSelected(doc) ? '✓' : ''}
-                </span>
-                📄 {getDisplayName(doc.document_name)}
-              </button>
-            ))}
+            {!collapsed[cat] && docs.map(doc => {
+              const selected   = isSelected(doc)
+              const hovered    = hoveredDocId === doc.document_id
+              const isDeleting = deletingIds.has(doc.document_id)
+
+              return (
+                <div
+                  key={doc.document_id}
+                  onClick={() => !isDeleting && toggleDoc(doc)}
+                  onKeyDown={(e) => {
+                    if ((e.key === 'Enter' || e.key === ' ') && !isDeleting) {
+                      e.preventDefault()
+                      toggleDoc(doc)
+                    }
+                  }}
+                  onMouseEnter={() => setHoveredDocId(doc.document_id)}
+                  onMouseLeave={() => setHoveredDocId(null)}
+                  role="button"
+                  tabIndex={0}
+                  style={{
+                    width: '100%',
+                    padding: '8px 8px 8px 24px',
+                    background: selected ? 'var(--tint-accent)' : 'transparent',
+                    border: selected
+                      ? '1px solid var(--tint-accent-strong)'
+                      : '1px solid transparent',
+                    borderRadius: 'var(--radius)',
+                    color: selected ? 'var(--accent)' : 'var(--text)',
+                    fontSize: '13px',
+                    textAlign: 'left',
+                    marginBottom: '2px',
+                    transition: 'all 0.15s',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: isDeleting ? 'wait' : 'pointer',
+                    opacity: isDeleting ? 0.5 : 1,
+                    outline: 'none',
+                  }}
+                >
+                  <span style={{
+                    width: '14px',
+                    height: '14px',
+                    borderRadius: '3px',
+                    border: `1px solid ${selected ? 'var(--accent)' : 'var(--muted)'}`,
+                    background: selected ? 'var(--accent)' : 'transparent',
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '9px',
+                    color: 'var(--bg)',
+                  }}>
+                    {selected ? '✓' : ''}
+                  </span>
+
+                  <span style={{
+                    flex: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    📄 {getDisplayName(doc.document_name)}
+                  </span>
+
+                  {/* Delete — always visible and discoverable.
+                      Idle opacity 0.7 so it's clearly present, not just "technically rendered".
+                      Brightens to 1.0 on row hover, turns red on icon hover for destructive intent. */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDelete(doc)
+                    }}
+                    disabled={isDeleting}
+                    title={isDeleting ? 'Deleting…' : 'Delete document'}
+                    aria-label={`Delete ${getDisplayName(doc.document_name)}`}
+                    style={{
+                      padding: '4px 8px',
+                      marginLeft: '4px',
+                      background: 'transparent',
+                      border: 'none',
+                      borderRadius: '4px',
+                      color: 'var(--muted)',
+                      fontSize: '15px',
+                      cursor: isDeleting ? 'wait' : 'pointer',
+                      flexShrink: 0,
+                      lineHeight: 1,
+                      opacity: isDeleting ? 0.5 : (hovered ? 1 : 0.7),
+                      transition: 'opacity 0.15s, color 0.15s, background 0.15s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isDeleting) {
+                        e.currentTarget.style.color = 'var(--error)'
+                        e.currentTarget.style.background = 'var(--tint-error, rgba(196,122,122,0.1))'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isDeleting) {
+                        e.currentTarget.style.color = 'var(--muted)'
+                        e.currentTarget.style.background = 'transparent'
+                      }
+                    }}
+                  >
+                    {isDeleting ? '⋯' : '✕'}
+                  </button>
+                </div>
+              )
+            })}
           </div>
         ))}
       </div>
@@ -236,7 +409,7 @@ export default function Sidebar({ selectedDocs, onSelectDocs, onCategoriesLoaded
       {/* Divider */}
       <div style={{ borderTop: '1px solid var(--border)', margin: '8px 12px' }} />
 
-      {/* Email section */}
+      {/* Email section (hidden) */}
       <div style={{ padding: '0 12px 16px', display: 'none' }}>
         <p style={{
           fontSize: '10px',
@@ -269,7 +442,7 @@ export default function Sidebar({ selectedDocs, onSelectDocs, onCategoriesLoaded
         {syncMessage && (
           <p style={{
             fontSize: '12px',
-            color: syncMessage.startsWith('✓') ? '#4ade80' : '#f87171',
+            color: syncMessage.startsWith('✓') ? 'var(--success)' : 'var(--error)',
             padding: '6px 12px 0',
           }}>
             {syncMessage}
@@ -277,22 +450,17 @@ export default function Sidebar({ selectedDocs, onSelectDocs, onCategoriesLoaded
         )}
       </div>
 
-      {/* Refresh */}
-      <div style={{ padding: '0 12px', marginTop: 'auto' }}>
+      {/* Bottom controls — theme toggle only */}
+      <div style={{
+        padding: '0 12px',
+        marginTop: 'auto',
+      }}>
         <button
-          onClick={load}
-          style={{
-            width: '100%',
-            padding: '10px 12px',
-            background: 'transparent',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)',
-            color: 'var(--muted)',
-            fontSize: '12px',
-            transition: 'all 0.15s',
-          }}
+          onClick={toggleTheme}
+          style={sidebarButtonStyle}
+          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
         >
-          ↻ Refresh
+          {theme === 'light' ? '🌙 Dark mode' : '☀️ Light mode'}
         </button>
       </div>
     </aside>
